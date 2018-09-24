@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/atotto/clipboard"
 	"github.com/ckiely91/shellsim/screen"
 	termbox "github.com/nsf/termbox-go"
 )
@@ -21,6 +22,45 @@ type Event struct {
 }
 
 func EventLoop(state *State, screen *screen.Screen) {
+	go keyEventLoop(state, screen)
+	mainEventLoop(state, screen)
+}
+
+func keyEventLoop(state *State, screen *screen.Screen) {
+	for {
+		switch ev := termbox.PollEvent(); ev.Type {
+		case termbox.EventKey:
+			switch ev.Key {
+			case termbox.KeyArrowLeft:
+				screen.MoveCursorLeft(true)
+			case termbox.KeyArrowRight:
+				screen.MoveCursorRight(true)
+			case termbox.KeyArrowUp:
+				screen.SetEditLine(true, []rune(state.CommandHistory.Up()))
+			case termbox.KeyArrowDown:
+				screen.SetEditLine(true, []rune(state.CommandHistory.Down()))
+			case termbox.KeyBackspace, termbox.KeyBackspace2:
+				screen.BackspaceAtCursor(true)
+			case termbox.KeyCtrlC, termbox.KeyEsc:
+				state.EventChan <- &Event{Type: EventTypeExit}
+			case termbox.KeyCtrlV:
+				text, _ := clipboard.ReadAll()
+				screen.AppendAtCursor(true, []rune(text)...)
+			case termbox.KeyEnter:
+				if len(screen.EditLine) == 0 {
+					break
+				}
+				state.EventChan <- &Event{Type: EventTypeCommand, Text: string(screen.EditLine)}
+			case termbox.KeySpace:
+				screen.AppendAtCursor(true, ' ')
+			default:
+				screen.AppendAtCursor(true, ev.Ch)
+			}
+		}
+	}
+}
+
+func mainEventLoop(state *State, screen *screen.Screen) {
 mainLoop:
 	for {
 		evt, ok := <-state.EventChan
