@@ -1,4 +1,4 @@
-package main
+package screen
 
 import (
 	termbox "github.com/nsf/termbox-go"
@@ -15,6 +15,15 @@ type Screen struct {
 	CurPath    string
 	CursorPosX int
 	EditLine   []rune
+}
+
+func NewScreen(curPath string) *Screen {
+	return &Screen{
+		Lines:      []Line{},
+		Editing:    true,
+		CurPath:    curPath,
+		CursorPosX: 0,
+	}
 }
 
 func (s *Screen) Redraw() {

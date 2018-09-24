@@ -23,6 +23,7 @@ func standardCommands() map[string]*Command {
 		"mkdir": MKDIRCommand,
 		"cd":    CDCommand,
 		"exit":  ExitCommand,
+		"rmdir": RMDIRCommand,
 	}
 }
 
@@ -35,16 +36,21 @@ Usage: help [command]`,
 			return nil, fmt.Errorf("must supply zero or one arguments")
 		}
 		if len(args) == 0 {
-			buf := bytes.NewBuffer([]byte{})
-			first := true
-			for cmdName, cmd := range state.Commands {
-				if !first {
-					buf.WriteString("\n\n")
-				} else {
-					first = false
+			buf := bytes.NewBufferString("Commands\n")
+			longest := 0
+			for cmdName := range state.Commands {
+				if len(cmdName) > longest {
+					longest = len(cmdName)
 				}
+			}
 
-				buf.WriteString(fmt.Sprintf("%s\n%s", cmdName, cmd.ShortHelp))
+			for cmdName, cmd := range state.Commands {
+				buf.WriteString("  ")
+				buf.WriteString(cmdName)
+				for i := 0; i < longest-len(cmdName); i++ {
+					buf.WriteRune(' ')
+				}
+				buf.WriteString(fmt.Sprintf(" - %s\n", cmd.ShortHelp))
 			}
 			return buf.Bytes(), nil
 		}
@@ -160,6 +166,36 @@ var ExitCommand = &Command{
 Usage: exit`,
 	Execute: func(state *State, args ...string) ([]byte, error) {
 		os.Exit(0)
+		return nil, nil
+	},
+}
+
+var RMDIRCommand = &Command{
+	ShortHelp: "Remove a directory and its contents",
+	LongHelp: `Remove a directory and its contents.
+Usage: rmdir [directory name]`,
+	Execute: func(state *State, args ...string) ([]byte, error) {
+		if len(args) != 1 {
+			return nil, fmt.Errorf("must supply directory name")
+		}
+
+		foundFile := fs.FindFileRelative(state.CurrentDir, state.RootDir, args[0])
+		if foundFile == nil {
+			return nil, fmt.Errorf("directory not found")
+		}
+
+		if foundFile.Type() != fs.FileTypeDirectory {
+			return nil, fmt.Errorf("that is not a directory")
+		}
+
+		// Remove this file from its parent dir
+		dir := foundFile.(*fs.Directory)
+		if dir.Parent == nil {
+			return nil, fmt.Errorf("cannot rmdir root")
+		}
+
+		delete(dir.Parent.Files, args[0])
+
 		return nil, nil
 	},
 }

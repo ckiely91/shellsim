@@ -1,0 +1,6 @@
+github.com/atotto/clipboard v0.1.0 h1:pw3q0vqdkRc2qob0PLEZo3NFSQehzW2dgSdbMI75kEs=
+github.com/atotto/clipboard v0.1.0/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
+github.com/mattn/go-runewidth v0.0.3 h1:a+kO+98RDGEfo6asOGMmpodZq4FNtnGP54yps8BzLR4=
+github.com/mattn/go-runewidth v0.0.3/go.mod h1:LwmH8dsx7+W8Uxz3IHJYH5QSwggIsqBzpuz5H//U1FU=
+github.com/nsf/termbox-go v0.0.0-20180819125858-b66b20ab708e h1:fvw0uluMptljaRKSU8459cJ4bmi3qUYyMs5kzpic2fY=
+github.com/nsf/termbox-go v0.0.0-20180819125858-b66b20ab708e/go.mod h1:IuKpRQcYE1Tfu+oAQqaLisqDeXgjyyltCfsaoYN18NQ=

@@ -5,10 +5,11 @@ import (
 )
 
 type State struct {
-	RootDir    *fs.Directory
-	CurrentDir *fs.Directory
-	Commands   map[string]*Command
-	Exiting    bool
+	RootDir        *fs.Directory
+	CurrentDir     *fs.Directory
+	Commands       map[string]*Command
+	CommandHistory *CommandHistory
+	EventChan      chan *Event
 }
 
 func NewState() *State {
@@ -18,9 +19,10 @@ func NewState() *State {
 	}
 
 	return &State{
-		RootDir:    rootDir,
-		CurrentDir: rootDir,
-		Commands:   standardCommands(),
-		Exiting:    false,
+		RootDir:        rootDir,
+		CurrentDir:     rootDir,
+		Commands:       standardCommands(),
+		CommandHistory: &CommandHistory{},
+		EventChan:      make(chan *Event),
 	}
 }
