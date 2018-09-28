@@ -9,10 +9,18 @@ import (
 	"github.com/ckiely91/shellsim/fs"
 )
 
+type TabCompletionType uint8
+
+const (
+	TabCompletionTypeFile TabCompletionType = iota
+	TabCompletionTypeServer
+)
+
 type Command struct {
-	ShortHelp string
-	LongHelp  string
-	Execute   func(state *State, args ...string) ([]byte, error)
+	ShortHelp          string
+	LongHelp           string
+	TabCompletionTypes []TabCompletionType
+	Execute            func(state *State, args ...string) ([]byte, error)
 }
 
 func standardCommands() map[string]*Command {
@@ -73,6 +81,7 @@ var LSCommand = &Command{
 	ShortHelp: "List files in the current directory",
 	LongHelp: `List files in the current directory.
 Usage: ls`,
+	TabCompletionTypes: []TabCompletionType{TabCompletionTypeFile},
 	Execute: func(state *State, args ...string) ([]byte, error) {
 		dirNames := []string{}
 		fileNames := []string{}
@@ -136,6 +145,7 @@ var CDCommand = &Command{
 	ShortHelp: "Change directory",
 	LongHelp: `Change directory.
 Usage: cd [relative or absolute path to directory]`,
+	TabCompletionTypes: []TabCompletionType{TabCompletionTypeFile},
 	Execute: func(state *State, args ...string) ([]byte, error) {
 		if len(args) > 1 {
 			return nil, fmt.Errorf("must supply zero or one arguments")
@@ -186,6 +196,7 @@ var RMDIRCommand = &Command{
 	ShortHelp: "Remove a directory and its contents",
 	LongHelp: `Remove a directory and its contents.
 Usage: rmdir [directory name]`,
+	TabCompletionTypes: []TabCompletionType{TabCompletionTypeFile},
 	Execute: func(state *State, args ...string) ([]byte, error) {
 		if len(args) != 1 {
 			return nil, fmt.Errorf("must supply directory name")
@@ -216,6 +227,7 @@ var AppendCommand = &Command{
 	ShortHelp: "Append text to an existing or new file",
 	LongHelp: `Append text to a file. If it does not exist, it will be created.
 Usage: create [filename] "your text here"`,
+	TabCompletionTypes: []TabCompletionType{TabCompletionTypeFile},
 	Execute: func(state *State, args ...string) ([]byte, error) {
 		if len(args) < 1 {
 			return nil, fmt.Errorf("must supply at least directory name")
@@ -273,6 +285,7 @@ var CatCommand = &Command{
 	ShortHelp: "View contents of a file",
 	LongHelp: `View contents of a file.
 Usage: cat [path to file]`,
+	TabCompletionTypes: []TabCompletionType{TabCompletionTypeFile},
 	Execute: func(state *State, args ...string) ([]byte, error) {
 		if len(args) < 1 {
 			return nil, fmt.Errorf("must supply a file path")
@@ -296,6 +309,7 @@ var ReplaceCommand = &Command{
 	ShortHelp: "Replace all instances of a string in a file",
 	LongHelp: `Replace all instances of a string in a file.
 Usage: replace [path to file] [search text] [replace text]`,
+	TabCompletionTypes: []TabCompletionType{TabCompletionTypeFile},
 	Execute: func(state *State, args ...string) ([]byte, error) {
 		if len(args) != 3 {
 			return nil, fmt.Errorf("must supply path to file, search text and replace text")
@@ -342,6 +356,7 @@ var ConnectCommand = &Command{
 	ShortHelp: "Connect to another host",
 	LongHelp: `Connect to another host.
 Usage: connect [hostname]`,
+	TabCompletionTypes: []TabCompletionType{TabCompletionTypeServer},
 	Execute: func(state *State, args ...string) ([]byte, error) {
 		if len(args) != 1 {
 			return nil, fmt.Errorf("must supply a hostname")

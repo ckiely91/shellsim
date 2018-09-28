@@ -22,6 +22,7 @@ const (
 	EventTypeBackspace
 	EventTypePaste
 	EventTypeEnter
+	EventTypeTab
 	EventTypeChar
 )
 
@@ -56,6 +57,8 @@ func keyEventLoop(ch chan *Event) {
 				sendEvent(ch, EventTypePaste, "")
 			case termbox.KeyEnter:
 				sendEvent(ch, EventTypeEnter, "")
+			case termbox.KeyTab:
+				sendEvent(ch, EventTypeTab, "")
 			case termbox.KeySpace:
 				sendEvent(ch, EventTypeChar, " ")
 			default:
@@ -114,6 +117,8 @@ mainLoop:
 		case EventTypePaste:
 			text, _ := clipboard.ReadAll()
 			screen.AppendAtCursor(true, []rune(text)...)
+		case EventTypeTab:
+			screen.SetEditLine(true, tabCompletion(state, screen.EditLine))
 		case EventTypeEnter:
 			if len(screen.EditLine) == 0 {
 				break
