@@ -13,7 +13,16 @@ type EventType uint8
 
 const (
 	EventTypeCommand EventType = iota
+	EventTypeLog
 	EventTypeExit
+	EventTypeArrowLeft
+	EventTypeArrowRight
+	EventTypeArrowUp
+	EventTypeArrowDown
+	EventTypeBackspace
+	EventTypePaste
+	EventTypeEnter
+	EventTypeChar
 )
 
 type Event struct {
@@ -22,39 +31,35 @@ type Event struct {
 }
 
 func EventLoop(state *State, screen *screen.Screen) {
-	go keyEventLoop(state, screen)
+	go keyEventLoop(state.EventChan)
 	mainEventLoop(state, screen)
 }
 
-func keyEventLoop(state *State, screen *screen.Screen) {
+func keyEventLoop(ch chan *Event) {
 	for {
 		switch ev := termbox.PollEvent(); ev.Type {
 		case termbox.EventKey:
 			switch ev.Key {
 			case termbox.KeyArrowLeft:
-				screen.MoveCursorLeft(true)
+				sendEvent(ch, EventTypeArrowLeft, "")
 			case termbox.KeyArrowRight:
-				screen.MoveCursorRight(true)
+				sendEvent(ch, EventTypeArrowRight, "")
 			case termbox.KeyArrowUp:
-				screen.SetEditLine(true, []rune(state.CommandHistory.Up()))
+				sendEvent(ch, EventTypeArrowUp, "")
 			case termbox.KeyArrowDown:
-				screen.SetEditLine(true, []rune(state.CommandHistory.Down()))
+				sendEvent(ch, EventTypeArrowDown, "")
 			case termbox.KeyBackspace, termbox.KeyBackspace2:
-				screen.BackspaceAtCursor(true)
+				sendEvent(ch, EventTypeBackspace, "")
 			case termbox.KeyCtrlC, termbox.KeyEsc:
-				state.EventChan <- &Event{Type: EventTypeExit}
+				sendEvent(ch, EventTypeExit, "")
 			case termbox.KeyCtrlV:
-				text, _ := clipboard.ReadAll()
-				screen.AppendAtCursor(true, []rune(text)...)
+				sendEvent(ch, EventTypePaste, "")
 			case termbox.KeyEnter:
-				if len(screen.EditLine) == 0 {
-					break
-				}
-				state.EventChan <- &Event{Type: EventTypeCommand, Text: string(screen.EditLine)}
+				sendEvent(ch, EventTypeEnter, "")
 			case termbox.KeySpace:
-				screen.AppendAtCursor(true, ' ')
+				sendEvent(ch, EventTypeChar, " ")
 			default:
-				screen.AppendAtCursor(true, ev.Ch)
+				sendEvent(ch, EventTypeChar, string(ev.Ch))
 			}
 		}
 	}
@@ -69,8 +74,6 @@ mainLoop:
 		}
 
 		switch evt.Type {
-		case EventTypeExit:
-			break mainLoop
 		case EventTypeCommand:
 			state.CommandHistory.Append(evt.Text)
 			screen.AppendLines(false, termbox.ColorDefault, fmt.Sprintf("%v > %v", screen.CurPath, evt.Text))
@@ -92,10 +95,38 @@ mainLoop:
 
 			screen.SetEditLine(false, []rune{})
 			// And set our current directory in case it changed
-			screen.CurPath = state.CurrentDir.FullPath()
+			screen.CurPath = fmt.Sprintf("%v:%v", state.CurrentHost.Hostname, state.CurrentDir.FullPath())
 			screen.Redraw()
+		case EventTypeLog:
+			screen.AppendLines(true, termbox.ColorDefault, evt.Text)
+		case EventTypeExit:
+			break mainLoop
+		case EventTypeArrowLeft:
+			screen.MoveCursorLeft(true)
+		case EventTypeArrowRight:
+			screen.MoveCursorRight(true)
+		case EventTypeArrowUp:
+			screen.SetEditLine(true, []rune(state.CommandHistory.Up()))
+		case EventTypeArrowDown:
+			screen.SetEditLine(true, []rune(state.CommandHistory.Down()))
+		case EventTypeBackspace:
+			screen.BackspaceAtCursor(true)
+		case EventTypePaste:
+			text, _ := clipboard.ReadAll()
+			screen.AppendAtCursor(true, []rune(text)...)
+		case EventTypeEnter:
+			if len(screen.EditLine) == 0 {
+				break
+			}
+			go sendEvent(state.EventChan, EventTypeCommand, string(screen.EditLine))
+		case EventTypeChar:
+			screen.AppendAtCursor(true, []rune(evt.Text)...)
 		}
 	}
+}
+
+func sendEvent(ch chan *Event, evt EventType, text string) {
+	ch <- &Event{Type: evt, Text: text}
 }
 
 func readLine(line []rune) (cmd string, args []string, err error) {

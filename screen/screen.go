@@ -19,7 +19,9 @@ type Screen struct {
 
 func NewScreen(curPath string) *Screen {
 	return &Screen{
-		Lines:      []Line{},
+		Lines: []Line{
+			{Color: termbox.ColorDefault, Line: "Welcome. Type \"help\" to list commands."},
+		},
 		Editing:    true,
 		CurPath:    curPath,
 		CursorPosX: 0,

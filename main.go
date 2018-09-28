@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/ckiely91/shellsim/command"
 	"github.com/ckiely91/shellsim/screen"
 
@@ -18,7 +20,7 @@ func main() {
 
 	termbox.SetInputMode(termbox.InputEsc)
 
-	screen := screen.NewScreen(state.CurrentDir.FullPath())
+	screen := screen.NewScreen(fmt.Sprintf("%v:%v", state.CurrentHost.Hostname, state.CurrentDir.FullPath()))
 	screen.Redraw()
 
 	command.EventLoop(state, screen)
